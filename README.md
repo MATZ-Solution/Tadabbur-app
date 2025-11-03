@@ -4,10 +4,12 @@ This repository contains both the **frontend** and **backend** of the Tadabbur p
 
 ## Backend:
 
+```bash
 cd backend
 uv sync
 
 ## Frontend:
 
+```bash
 cd frontend
 npm install
