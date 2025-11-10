@@ -298,20 +298,6 @@ export default function ChatPage() {
     }))
   }
 
-    // moved the logic to websocket
-  };
-
-  const handleInput = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!inputRef.current) return;
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const input = inputRef.current?.innerText;
-      if (input.trim() != "") {
-        ask(input);
-      }
-    }
-  };
-
   return (
     <div className="w-screen h-screen bg-gray-50">
       <div className="w-full h-full flex flex-col items-center ">
