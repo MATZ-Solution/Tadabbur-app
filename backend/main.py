@@ -125,13 +125,14 @@ class ChatRequest(BaseModel):
 
 @app.post("/api/chat")
 async def chat(req: ChatRequest, authorization: str | None = Header(None)):
-    """Fallback HTTP chat route (non-WebSocket)."""
-    if API_KEY:
-        if authorization is None or authorization != f"Bearer {API_KEY}":
-            raise HTTPException(status_code=401, detail="Unauthorized")
+    # """Fallback HTTP chat route (non-WebSocket)."""
+    # if API_KEY:
+    #     if authorization is None or authorization != f"Bearer {API_KEY}":
+    #         raise HTTPException(status_code=401, detail="Unauthorized")
 
     conversation = "\n".join([f"{m.role}: {m.content}" for m in req.messages])
     try:
+        print("hey")
         result = await Runner.run(
             agent_module.agent,
             conversation,
@@ -157,51 +158,58 @@ async def chat(req: ChatRequest, authorization: str | None = Header(None)):
 
 # ------------------- WEBSOCKET ENDPOINT -------------------
 
+
 @app.websocket("/ws/chat")
 async def websocket_chat(websocket: WebSocket):
     """Handles Quran AI chat via WebSocket."""
     await websocket.accept()
-
+    print("Connected to websocket successfully!")
     try:
-        # Expect the first message to contain API key
-        init_msg = await websocket.receive_text()
-        init_data = json.loads(init_msg)
-        token = init_data.get("authorization")
+        # # Expect the first message to contain API key
+        # init_msg = await websocket.receive_text()
+        # init_data = json.loads(init_msg)
+        # token = init_data.get("authorization")
 
-        # Security check
-        if API_KEY and token != f"Bearer {API_KEY}":
-            await websocket.send_json({
-                "type": "error",
-                "content": "Unauthorized WebSocket connection."
-            })
-            await websocket.close()
-            return
+        # # # Security check
+        # # if API_KEY and token != f"Bearer {API_KEY}":
+        # #     await websocket.send_json({
+        # #         "type": "error",
+        # #         "content": "Unauthorized WebSocket connection."
+        # #     })
+        # #     await websocket.close()
+        # #     return
 
-        # Acknowledge connection
-        await websocket.send_json({
-            "type": "connection_ack",
-            "content": "WebSocket connected successfully."
-        })
+        # # Acknowledge connection
+        # await websocket.send_json({
+        #     "type": "connection_ack",
+        #     "content": "WebSocket connected successfully."
+        # })
 
         # Main message loop
         while True:
             raw_data = await websocket.receive_text()
             data = json.loads(raw_data)
+            
             messages = data.get("messages", [])
 
             conversation = "\n".join(
                 [f"{m['role']}: {m['content']}" for m in messages]
             )
 
+            print("conversation", conversation)
+
             try:
-                result = await Runner.run(
+                print("hey")
+                result =await Runner.run(
                     agent_module.agent,
                     conversation,
                     run_config=getattr(agent_module, "config", None)
                 )
 
+                print("result", result)
                 reply_text = getattr(result, "final_output", None) or getattr(result, "output_text", None) or str(result)
 
+                print('reply_text', reply_text)
                 await websocket.send_json({
                     "type": "assistance_response",
                     "content": reply_text
@@ -224,10 +232,17 @@ async def websocket_chat(websocket: WebSocket):
                 })
 
             except Exception as e:
+                print(f"⚠️ WebSocket internal error: {e}")
+                import traceback
+                traceback.print_exc()  # 👈 will show full stack trace in terminal
                 await websocket.send_json({
                     "type": "error",
                     "content": str(e)
                 })
+                # await websocket.send_json({
+                #     "type": "error",
+                #     "content": str(e)
+                # })
 
     except WebSocketDisconnect:
         print("🔌 Client disconnected")
