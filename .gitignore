@@ -3,3 +3,6 @@
 .env.production
 .env.local
 .env*.local
+.vscode/
+CLAUDE.md
+.nginx/
